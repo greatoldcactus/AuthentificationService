@@ -5,6 +5,7 @@ import "time"
 // RefreshToken is used to Refresh Access token
 type RefreshToken struct {
 	Payload RefreshTokenPayload `json:"payload"`
+	Header  RefreshTokenHeader  `json:"header"`
 }
 
 // RefreshTokenPayload is payload for Refresh token
