@@ -1,6 +1,7 @@
 package tokens
 
 import (
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -58,7 +59,20 @@ func (t RefreshToken) Hash() (string, error) {
 		return "", fmt.Errorf("failed to marshall RefreshToken: %w", err)
 	}
 
-	hash, err := bcrypt.GenerateFromPassword(json, bcrypt.DefaultCost)
+	shaHasher := sha256.New()
+
+	if _, err = shaHasher.Write(json); err != nil {
+		return "", fmt.Errorf("failed to calculate sha256 hash of RefreshToken json")
+	}
+
+	hash := shaHasher.Sum(nil)
+
+	// Truncate hash to use it with bcrypt which has limit of 72 bytes
+	if len(hash) > 72 {
+		hash = hash[:72]
+	}
+
+	hash, err = bcrypt.GenerateFromPassword(hash, bcrypt.DefaultCost)
 
 	if err != nil {
 		return "", fmt.Errorf("failed to calculate bcrypt hash for refresh token: %w", err)
