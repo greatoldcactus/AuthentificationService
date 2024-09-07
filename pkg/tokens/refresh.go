@@ -18,3 +18,16 @@ type RefreshTokenPayload struct {
 type RefreshTokenHeader struct {
 	Expires time.Time `json:"exp"`
 }
+
+// NewRefreshToken creates new refresh token
+func NewRefreshToken(accessTokenSignature string, expires time.Time) RefreshToken {
+	return RefreshToken{
+		Payload: RefreshTokenPayload{
+			AccessTokenSignature: accessTokenSignature,
+		},
+		Header: RefreshTokenHeader{
+			Expires: expires,
+		},
+	}
+}
+
