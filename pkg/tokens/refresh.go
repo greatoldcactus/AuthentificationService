@@ -11,7 +11,7 @@ type RefreshToken struct {
 // RefreshTokenPayload is payload for Refresh token
 // Contains signature of AccessToken to be used with
 type RefreshTokenPayload struct {
-	AccessTokenSignature string `json:"accTokenSignature"`
+	AccessTokenSignature string `json:"access_token_signature"`
 }
 
 // RefreshTokenHeader is header for Refresh token
