@@ -9,6 +9,7 @@ import (
 	"fmt"
 )
 
+// CalculateAccessTokenHash calculates the hash of the given access token using the provided secret.
 func CalculateAccessTokenHash(token tokens.AccessToken, secret string) (hash string, err error) {
 	shaObject := sha512.New()
 
@@ -39,6 +40,7 @@ func CalculateAccessTokenHash(token tokens.AccessToken, secret string) (hash str
 
 var ErrNilPointerToken error = errors.New("passed nil as *tokens.AccessToken")
 
+// SignAccessToken sets the signature of the given access token using the hash calculated by CalculateAccessTokenHash.
 func SignAccessToken(token *tokens.AccessToken, secret string) (err error) {
 
 	if token == nil {
