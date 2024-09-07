@@ -1,6 +1,11 @@
 package tokens
 
-import "time"
+import (
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"time"
+)
 
 // RefreshToken is used to Refresh Access token
 type RefreshToken struct {
@@ -29,5 +34,16 @@ func NewRefreshToken(accessTokenSignature string, expires time.Time) RefreshToke
 			Expires: expires,
 		},
 	}
+}
+
+// RefreshToken.Base64 encodes RefreshToken in base64
+func (t RefreshToken) Base64() (string, error) {
+	tokenJson, err := json.Marshal(t)
+
+	if err != nil {
+		return "", fmt.Errorf("failed to marshall RefreshToken: %w", err)
+	}
+
+	return base64.StdEncoding.EncodeToString(tokenJson), nil
 }
 
