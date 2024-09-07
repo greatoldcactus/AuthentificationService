@@ -5,6 +5,7 @@ import (
 	"crypto/sha512"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 )
 
@@ -34,4 +35,23 @@ func CalculateAccessTokenHash(token tokens.AccessToken, secret string) (hash str
 	hash = base64.StdEncoding.EncodeToString(finalHash)
 
 	return
+}
+
+var ErrNilPointerToken error = errors.New("passed nil as *tokens.AccessToken")
+
+func SignAccessToken(token *tokens.AccessToken, secret string) (err error) {
+
+	if token == nil {
+		return ErrNilPointerToken
+	}
+
+	signature, err := CalculateAccessTokenHash(*token, secret)
+
+	if err != nil {
+		return fmt.Errorf("incorrect token for signature calculation: %v", err)
+	}
+
+	token.Signature = signature
+
+	return nil
 }
