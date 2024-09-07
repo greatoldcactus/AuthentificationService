@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // RefreshToken is used to Refresh Access token
@@ -45,6 +47,24 @@ func (t RefreshToken) Base64() (string, error) {
 	}
 
 	return base64.StdEncoding.EncodeToString(tokenJson), nil
+}
+
+// Hash method is used to compute bcrypt hash of RefreshToken
+func (t RefreshToken) Hash() (string, error) {
+
+	json, err := json.Marshal(t)
+
+	if err != nil {
+		return "", fmt.Errorf("failed to marshall RefreshToken: %w", err)
+	}
+
+	hash, err := bcrypt.GenerateFromPassword(json, bcrypt.DefaultCost)
+
+	if err != nil {
+		return "", fmt.Errorf("failed to calculate bcrypt hash for refresh token: %w", err)
+	}
+
+	return base64.StdEncoding.EncodeToString(hash), nil
 }
 
 // LoadRefreshTokenFromBase64 loads Refresh token from base64 encoding

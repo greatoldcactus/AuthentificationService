@@ -46,3 +46,17 @@ func TestLoadRefreshTokenFromBase64(t *testing.T) {
 		t.Errorf("loaded token payload is not equal to initial token:\n%#v\n%#v", tokenLoaded.Payload, token.Payload)
 	}
 }
+
+func TestRefreshToken_Hash(t *testing.T) {
+	token := NewRefreshToken("hello", time.Now())
+
+	hash, err := token.Hash()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if hash == "" {
+		t.Fatal("generated refresh token hash is empty!")
+	}
+}
