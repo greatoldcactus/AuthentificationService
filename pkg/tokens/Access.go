@@ -16,3 +16,13 @@ type AccessTokenHeader struct {
 	Alg  string    `json:"alg"`
 	Exp  time.Time `json:"exp"`
 }
+
+func NewAccessToken(Exp time.Time) AccessToken {
+	return AccessToken{
+		Header: AccessTokenHeader{
+			Type: "JWT",
+			Alg:  "SHA512",
+			Exp:  Exp,
+		},
+	}
+}
