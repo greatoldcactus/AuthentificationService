@@ -22,6 +22,18 @@ func TestCalculateAccessTokenHash(t *testing.T) {
 		t.Fatalf("hash was not generated properly, result is ''")
 	}
 
+	token.Signature = "hello there"
+
+	hash2, err := CalculateAccessTokenHash(token, secret)
+
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	if hash != hash2 {
+		t.Fatalf("token hash was changed after signature was updated: %v    %v", hash, hash2)
+	}
+
 	fmt.Printf("hash is: %v", hash)
 }
 
