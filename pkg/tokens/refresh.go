@@ -47,3 +47,26 @@ func (t RefreshToken) Base64() (string, error) {
 	return base64.StdEncoding.EncodeToString(tokenJson), nil
 }
 
+// LoadRefreshTokenFromBase64 loads Refresh token from base64 encoding
+func LoadRefreshTokenFromBase64(s string) (RefreshToken, error) {
+
+	if s == "" {
+		return RefreshToken{}, fmt.Errorf("empty input string")
+	}
+
+	tokenJson, err := base64.StdEncoding.DecodeString(s)
+
+	if err != nil {
+		return RefreshToken{}, fmt.Errorf("incorrect Refresh token base64 string: %w", err)
+	}
+
+	var token RefreshToken
+
+	err = json.Unmarshal(tokenJson, &token)
+
+	if err != nil {
+		return RefreshToken{}, fmt.Errorf("failed to unmarshall Refresh token from json: %w", err)
+	}
+
+	return token, nil
+}
