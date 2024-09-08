@@ -58,7 +58,7 @@ func validateAuthRequest(w http.ResponseWriter, r *http.Request) error {
 		return fmt.Errorf(msg)
 	}
 
-	GUIDs, ok := r.Header["guid"]
+	GUIDs, ok := r.Header["Guid"]
 
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
@@ -85,7 +85,7 @@ func handleAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// GUID := r.Header.Get("GUID")
+	// GUID := r.Header.Get("Guid")
 	// addr := r.RemoteAddr
 	// TODO Add GUID to Refresh token hash calculation to ensure is was used by correct one
 	// TODO add saving of Refresh tokens to DB

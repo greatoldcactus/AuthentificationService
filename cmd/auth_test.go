@@ -17,7 +17,7 @@ func TestAuthOk(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	request.Header.Add("guid", "hello")
+	request.Header.Add("Guid", "hello")
 
 	handler := http.HandlerFunc(handleAuth)
 
