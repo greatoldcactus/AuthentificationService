@@ -41,8 +41,8 @@ func CheckRefreshTokenHash(w http.ResponseWriter, r *http.Request, DB *sql.DB, h
 		if errors.Is(err, sql.ErrNoRows) {
 			msg := "Invalid refresh token"
 			log.Default().Print(msg)
-			w.Write([]byte(msg))
 			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(msg))
 			return err
 		}
 

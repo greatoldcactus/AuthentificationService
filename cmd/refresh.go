@@ -54,8 +54,8 @@ func newHandleRefresh(DB *sql.DB, mailer mail.Mailer) func(w http.ResponseWriter
 		if time.Now().After(refreshToken.Header.Expires) {
 			msg := "passed expired refresh token"
 			log.Default().Printf(msg)
-			w.Write([]byte(msg))
 			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(msg))
 			return
 		}
 
