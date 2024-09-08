@@ -33,7 +33,7 @@ func ConnectDB() error {
 
 // CheckRefreshTokenHash checks that Refresh token hash is contained in DB
 func CheckRefreshTokenHash(w http.ResponseWriter, r *http.Request, DB *sql.DB, hash string) error {
-	row := DB.QueryRow("SELECT hash FROM REFRESH_TOKEN WHERE token_hash = $1", hash)
+	row := DB.QueryRow("SELECT token_hash REFRESH_TOKEN WHERE token_hash = $1", hash)
 
 	var resultHash string
 
