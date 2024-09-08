@@ -14,5 +14,7 @@ const RefreshTokenDuration time.Duration = time.Hour * 24 * 30
 func main() {
 	http.HandleFunc("/v1/auth", handleAuth)
 
+	http.HandleFunc("/v1/refresh", handleRefresh)
+
 	http.ListenAndServe(":5555", nil)
 }
