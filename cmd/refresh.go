@@ -96,6 +96,14 @@ func handleRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	tx, err := DB.Begin()
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
 	// Checking that Refresh token hash is contained in DB
 	row := DB.QueryRow("SELECT hash FROM REFRESH_TOKEN WHERE hash = $1", requestHash)
 
@@ -145,6 +153,12 @@ func handleRefresh(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.Printf("error when writing new refresh token hash into DB: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if err = tx.Commit(); err != nil {
+		log.Printf("error when committing transaction: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
