@@ -3,9 +3,7 @@ package main
 import (
 	api "authservice/pkg/api"
 	"authservice/pkg/auth"
-	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -104,30 +102,11 @@ func handleRefresh(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	// Checking that Refresh token hash is contained in DB
-	row := DB.QueryRow("SELECT hash FROM REFRESH_TOKEN WHERE hash = $1", requestHash)
-
-	var resultHash string
-
-	if err != row.Scan(&resultHash) {
-		if errors.Is(err, sql.ErrNoRows) {
-			msg := "Invalid refresh token"
-			log.Default().Print(msg)
-			w.Write([]byte(msg))
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		log.Default().Printf("failed to query row from df: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
+	if err = CheckRefreshTokenHash(w, r, DB, requestHash); err != nil {
 		return
 	}
 
-	_, err = DB.Exec("DELETE FROM REFRESH_TOKEN WHERE token_hash = $1", requestHash)
-
-	if err != nil {
-		log.Default().Printf("error when deleting token hash from DB: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
+	if err = DeleteRefreshTokenHash(w, r, DB, requestHash); err != nil {
 		return
 	}
 
@@ -149,11 +128,7 @@ func handleRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = DB.Exec("INSERT INTO REFRESH_TOKEN (hash, GUID) VALUES ($1, $2)", requestHash, GUID)
-
-	if err != nil {
-		log.Printf("error when writing new refresh token hash into DB: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
+	if err = AddRefreshTokenHash(w, r, DB, requestHash, GUID); err != nil {
 		return
 	}
 
