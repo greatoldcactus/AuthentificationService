@@ -1,7 +1,7 @@
 package main
 
 import (
-	"authservice/pkg/tokens"
+	api "authservice/pkg/api"
 	"net/http"
 	"time"
 )
@@ -11,8 +11,8 @@ var secret string = "my secret"
 
 // RefreshAccessTokenPair is pair of Refresh and Access tokens that is used in Refresh and Auth request
 type RefreshAccessTokenPair struct {
-	AccessToken  tokens.AccessToken `json:"access_token"`
-	RefreshToken string             `json:"refresh_token"`
+	AccessToken  api.AccessToken `json:"access_token"`
+	RefreshToken string          `json:"refresh_token"`
 }
 
 const AccessTokenDuration time.Duration = time.Hour * 2

@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"authservice/pkg/tokens"
+	api "authservice/pkg/api"
 	"crypto/sha512"
 	"encoding/base64"
 	"encoding/json"
@@ -10,7 +10,7 @@ import (
 )
 
 // CalculateAccessTokenHash calculates the hash of the given access token using the provided secret.
-func CalculateAccessTokenHash(token tokens.AccessToken, secret string) (hash string, err error) {
+func CalculateAccessTokenHash(token api.AccessToken, secret string) (hash string, err error) {
 	shaObject := sha512.New()
 
 	payloadData, err := json.Marshal(token.Payload)
@@ -41,7 +41,7 @@ func CalculateAccessTokenHash(token tokens.AccessToken, secret string) (hash str
 var ErrNilPointerToken error = errors.New("passed nil as *tokens.AccessToken")
 
 // SignAccessToken sets the signature of the given access token using the hash calculated by CalculateAccessTokenHash.
-func SignAccessToken(token *tokens.AccessToken, secret string) (err error) {
+func SignAccessToken(token *api.AccessToken, secret string) (err error) {
 
 	if token == nil {
 		return ErrNilPointerToken

@@ -1,8 +1,8 @@
 package main
 
 import (
+	api "authservice/pkg/api"
 	"authservice/pkg/auth"
-	"authservice/pkg/tokens"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -11,7 +11,7 @@ import (
 )
 
 func generateAccessRefreshPair() (tokenPair RefreshAccessTokenPair, err error) {
-	accessToken := tokens.NewAccessToken(time.Now().Add(AccessTokenDuration))
+	accessToken := api.NewAccessToken(time.Now().Add(AccessTokenDuration))
 
 	err = auth.SignAccessToken(&accessToken, secret)
 
@@ -20,7 +20,7 @@ func generateAccessRefreshPair() (tokenPair RefreshAccessTokenPair, err error) {
 		return
 	}
 
-	refreshToken := tokens.NewRefreshToken(accessToken.Signature, time.Now().Add(RefreshTokenDuration))
+	refreshToken := api.NewRefreshToken(accessToken.Signature, time.Now().Add(RefreshTokenDuration))
 
 	refreshTokenBase64, err := refreshToken.Base64()
 

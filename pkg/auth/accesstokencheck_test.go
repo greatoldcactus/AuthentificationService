@@ -1,14 +1,14 @@
 package auth
 
 import (
-	"authservice/pkg/tokens"
+	api "authservice/pkg/api"
 	"fmt"
 	"testing"
 	"time"
 )
 
 func TestCalculateAccessTokenHash(t *testing.T) {
-	token := tokens.NewAccessToken(time.Now())
+	token := api.NewAccessToken(time.Now())
 
 	secret := "my interesting secret"
 
@@ -38,7 +38,7 @@ func TestCalculateAccessTokenHash(t *testing.T) {
 }
 
 func TestSignAccessToken(t *testing.T) {
-	token := tokens.NewAccessToken(time.Now())
+	token := api.NewAccessToken(time.Now())
 	secret := "my inrerecting token"
 
 	signature, err := CalculateAccessTokenHash(token, secret)
