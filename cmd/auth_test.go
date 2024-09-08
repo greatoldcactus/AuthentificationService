@@ -1,6 +1,7 @@
 package main
 
 import (
+	api "authservice/pkg/api"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -35,7 +36,7 @@ func TestAuthOk(t *testing.T) {
 		t.Fatalf("Failed to read response body")
 	}
 
-	var tokens RefreshAccessTokenPair
+	var tokens api.RefreshAccessTokenPair
 
 	err = json.Unmarshal(responseBody, &tokens)
 

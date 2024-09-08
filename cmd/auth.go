@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func generateAccessRefreshPair() (tokenPair RefreshAccessTokenPair, err error) {
+func generateAccessRefreshPair() (tokenPair api.RefreshAccessTokenPair, err error) {
 	accessToken := api.NewAccessToken(time.Now().Add(AccessTokenDuration))
 
 	err = auth.SignAccessToken(&accessToken, secret)
@@ -29,7 +29,7 @@ func generateAccessRefreshPair() (tokenPair RefreshAccessTokenPair, err error) {
 		return
 	}
 
-	tokenPair = RefreshAccessTokenPair{
+	tokenPair = api.RefreshAccessTokenPair{
 		RefreshToken: refreshTokenBase64,
 		AccessToken:  accessToken,
 	}
