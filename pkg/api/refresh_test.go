@@ -50,7 +50,7 @@ func TestLoadRefreshTokenFromBase64(t *testing.T) {
 func TestRefreshToken_Hash(t *testing.T) {
 	token := NewRefreshToken("hello", time.Now(), "your ip")
 
-	hash, err := token.Hash()
+	hash, err := token.Hash("832")
 
 	if err != nil {
 		t.Fatal(err)
@@ -58,5 +58,15 @@ func TestRefreshToken_Hash(t *testing.T) {
 
 	if hash == "" {
 		t.Fatal("generated refresh token hash is empty!")
+	}
+
+	hash2, err := token.Hash("933")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if hash == hash2 {
+		t.Fatalf("token hash not differs with different GUID")
 	}
 }

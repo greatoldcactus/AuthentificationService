@@ -53,7 +53,7 @@ func (t RefreshToken) Base64() (string, error) {
 }
 
 // Hash method is used to compute bcrypt hash of RefreshToken
-func (t RefreshToken) Hash() (string, error) {
+func (t RefreshToken) Hash(guid string) (string, error) {
 
 	json, err := json.Marshal(t)
 
@@ -64,7 +64,11 @@ func (t RefreshToken) Hash() (string, error) {
 	shaHasher := sha256.New()
 
 	if _, err = shaHasher.Write(json); err != nil {
-		return "", fmt.Errorf("failed to calculate sha256 hash of RefreshToken json")
+		return "", fmt.Errorf("failed to calculate sha256 hash of RefreshToken json: %w", err)
+	}
+
+	if _, err = shaHasher.Write([]byte(guid)); err != nil {
+		return "", fmt.Errorf("failed to calculate sha256 hash of RefreshToken json: %w", err)
 	}
 
 	hash := shaHasher.Sum(nil)
