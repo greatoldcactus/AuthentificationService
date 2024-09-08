@@ -24,6 +24,10 @@ func main() {
 		panic(msg)
 	}
 
+	if err := ConnectDB(); err != nil {
+		panic(err)
+	}
+
 	http.HandleFunc("/v1/auth", handleAuth)
 
 	http.HandleFunc("/v1/refresh", handleRefresh)
