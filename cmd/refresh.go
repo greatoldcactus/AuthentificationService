@@ -16,7 +16,7 @@ func handleRefresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// GUID := r.Header.Get("Guid")
-	// addr := r.RemoteAddr
+	ip := r.RemoteAddr
 
 	body, err := io.ReadAll(r.Body)
 
@@ -74,7 +74,7 @@ func handleRefresh(w http.ResponseWriter, r *http.Request) {
 
 	// TODO invalidate old Refresh token in DB
 
-	tokenPair, err := generateAccessRefreshPair()
+	tokenPair, err := generateAccessRefreshPair(ip)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

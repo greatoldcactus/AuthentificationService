@@ -15,7 +15,7 @@ import (
 func TestRefreshOk(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
-	tokens, err := generateAccessRefreshPair()
+	tokens, err := generateAccessRefreshPair("127.0.0.1")
 
 	requestBody, err := json.Marshal(tokens)
 

@@ -20,6 +20,7 @@ type RefreshToken struct {
 // Contains signature of AccessToken to be used with
 type RefreshTokenPayload struct {
 	AccessTokenSignature string `json:"access_token_signature"`
+	Ip                   string `json:"source_ip"`
 }
 
 // RefreshTokenHeader is header for Refresh token
@@ -28,10 +29,11 @@ type RefreshTokenHeader struct {
 }
 
 // NewRefreshToken creates new refresh token
-func NewRefreshToken(accessTokenSignature string, expires time.Time) RefreshToken {
+func NewRefreshToken(accessTokenSignature string, expires time.Time, ip string) RefreshToken {
 	return RefreshToken{
 		Payload: RefreshTokenPayload{
 			AccessTokenSignature: accessTokenSignature,
+			Ip:                   ip,
 		},
 		Header: RefreshTokenHeader{
 			Expires: expires,

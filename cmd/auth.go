@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func generateAccessRefreshPair() (tokenPair api.RefreshAccessTokenPair, err error) {
+func generateAccessRefreshPair(ip string) (tokenPair api.RefreshAccessTokenPair, err error) {
 	accessToken := api.NewAccessToken(time.Now().Add(AccessTokenDuration))
 
 	err = auth.SignAccessToken(&accessToken, secret)
@@ -20,7 +20,7 @@ func generateAccessRefreshPair() (tokenPair api.RefreshAccessTokenPair, err erro
 		return
 	}
 
-	refreshToken := api.NewRefreshToken(accessToken.Signature, time.Now().Add(RefreshTokenDuration))
+	refreshToken := api.NewRefreshToken(accessToken.Signature, time.Now().Add(RefreshTokenDuration), ip)
 
 	refreshTokenBase64, err := refreshToken.Base64()
 
@@ -74,11 +74,12 @@ func handleAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// GUID := r.Header.Get("Guid")
-	// addr := r.RemoteAddr
 	// TODO Add GUID to Refresh token hash calculation to ensure is was used by correct one
 	// TODO add saving of Refresh tokens to DB
 
-	tokenPair, err := generateAccessRefreshPair()
+	ip := r.RemoteAddr
+
+	tokenPair, err := generateAccessRefreshPair(ip)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

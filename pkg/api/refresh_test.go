@@ -6,11 +6,11 @@ import (
 )
 
 func TestNewRefreshToken(t *testing.T) {
-	var _ RefreshToken = NewRefreshToken("hello", time.Now())
+	var _ RefreshToken = NewRefreshToken("hello", time.Now(), "your ip")
 }
 
 func TestRefreshToken_Base64(t *testing.T) {
-	token := NewRefreshToken("hello", time.Now())
+	token := NewRefreshToken("hello", time.Now(), "your ip")
 
 	tokenBase64, err := token.Base64()
 
@@ -24,7 +24,7 @@ func TestRefreshToken_Base64(t *testing.T) {
 }
 
 func TestLoadRefreshTokenFromBase64(t *testing.T) {
-	token := NewRefreshToken("hello", time.Now())
+	token := NewRefreshToken("hello", time.Now(), "your ip")
 
 	tokenBase64, err := token.Base64()
 
@@ -48,7 +48,7 @@ func TestLoadRefreshTokenFromBase64(t *testing.T) {
 }
 
 func TestRefreshToken_Hash(t *testing.T) {
-	token := NewRefreshToken("hello", time.Now())
+	token := NewRefreshToken("hello", time.Now(), "your ip")
 
 	hash, err := token.Hash()
 
