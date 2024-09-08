@@ -28,6 +28,8 @@ func main() {
 		panic(err)
 	}
 
+	defer DB.Close()
+
 	http.HandleFunc("/v1/auth", newHandleAuth(DB))
 
 	http.HandleFunc("/v1/refresh", newHandleRefresh(DB, mailer))
