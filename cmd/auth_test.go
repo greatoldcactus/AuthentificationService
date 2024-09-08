@@ -44,3 +44,63 @@ func TestAuthOk(t *testing.T) {
 	}
 
 }
+
+func TestAuthNoGuid(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request, err := http.NewRequest(http.MethodPost, "/v1/auth", strings.NewReader(""))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	handler := http.HandlerFunc(handleAuth)
+
+	handler.ServeHTTP(recorder, request)
+
+	response := recorder.Result()
+
+	if response.StatusCode == 200 {
+		t.Fatalf("Passed wrong request with no GUID")
+	}
+}
+
+func TestAuthTooMuchGuid(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request, err := http.NewRequest(http.MethodPost, "/v1/auth", strings.NewReader(""))
+
+	request.Header.Add("Guid", "hello")
+	request.Header.Add("Guid", "there")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	handler := http.HandlerFunc(handleAuth)
+
+	handler.ServeHTTP(recorder, request)
+
+	response := recorder.Result()
+
+	if response.StatusCode == 200 {
+		t.Fatalf("Passed wrong request with too much GUID")
+	}
+}
+
+func TeshAuthInvalidMethod(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request, err := http.NewRequest(http.MethodGet, "/v1/auth", strings.NewReader(""))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	handler := http.HandlerFunc(handleAuth)
+
+	handler.ServeHTTP(recorder, request)
+
+	response := recorder.Result()
+
+	if response.StatusCode == 200 {
+		t.Fatalf("Passed wrong request with incorrect method")
+	}
+}
