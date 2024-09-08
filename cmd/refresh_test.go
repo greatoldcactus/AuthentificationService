@@ -15,7 +15,8 @@ import (
 func TestRefreshOk(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
-	tokens, err := generateAccessRefreshPair("127.0.0.1")
+	ip := "127.0.0.1"
+	tokens, err := generateAccessRefreshPair(ip)
 
 	requestBody, err := json.Marshal(tokens)
 
@@ -24,6 +25,7 @@ func TestRefreshOk(t *testing.T) {
 	}
 
 	request, err := http.NewRequest(http.MethodPost, "/v1/auth", bytes.NewBuffer(requestBody))
+	request.RemoteAddr = ip
 
 	if err != nil {
 		t.Fatal(err)
@@ -35,9 +37,15 @@ func TestRefreshOk(t *testing.T) {
 
 	request.Header.Add("Guid", "hello")
 
+	mailer = &dummyMailer{}
+
 	handler := http.HandlerFunc(handleRefresh)
 
 	handler.ServeHTTP(recorder, request)
+
+	if mailer.(*dummyMailer).cnt > 0 {
+		t.Fatal("request with equal ip must not cause mail warning")
+	}
 
 	response := recorder.Result()
 
