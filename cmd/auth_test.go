@@ -87,7 +87,7 @@ func TestAuthTooMuchGuid(t *testing.T) {
 	}
 }
 
-func TeshAuthInvalidMethod(t *testing.T) {
+func TestAuthInvalidMethod(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	request, err := http.NewRequest(http.MethodGet, "/v1/auth", strings.NewReader(""))
 
