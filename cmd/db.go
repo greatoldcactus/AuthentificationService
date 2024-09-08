@@ -33,7 +33,7 @@ func ConnectDB() error {
 
 // CheckRefreshTokenHash checks that Refresh token hash is contained in DB
 func CheckRefreshTokenHash(w http.ResponseWriter, r *http.Request, DB *sql.DB, hash string) error {
-	row := DB.QueryRow("SELECT hash FROM REFRESH_TOKEN WHERE hash = $1", hash)
+	row := DB.QueryRow("SELECT hash FROM REFRESH_TOKEN WHERE token_hash = $1", hash)
 
 	var resultHash string
 
@@ -69,7 +69,7 @@ func DeleteRefreshTokenHash(w http.ResponseWriter, r *http.Request, DB *sql.DB, 
 
 // AddRefreshTokenHash stores Refresh token hash to DB
 func AddRefreshTokenHash(w http.ResponseWriter, r *http.Request, DB *sql.DB, hash string, GUID string) error {
-	_, err := DB.Exec("INSERT INTO REFRESH_TOKEN (hash, GUID) VALUES ($1, $2)", hash, GUID)
+	_, err := DB.Exec("INSERT INTO REFRESH_TOKEN (token_hash, GUID) VALUES ($1, $2)", hash, GUID)
 
 	if err != nil {
 		log.Printf("error when writing new refresh token hash into DB: %v", err)
