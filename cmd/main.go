@@ -30,7 +30,7 @@ func main() {
 
 	http.HandleFunc("/v1/auth", newHandleAuth(DB))
 
-	http.HandleFunc("/v1/refresh", newHandleRefresh(DB))
+	http.HandleFunc("/v1/refresh", newHandleRefresh(DB, mailer))
 
 	http.ListenAndServe(":5555", nil)
 }

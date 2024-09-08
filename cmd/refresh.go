@@ -3,6 +3,7 @@ package main
 import (
 	api "authservice/pkg/api"
 	"authservice/pkg/auth"
+	"authservice/pkg/mail"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -12,7 +13,7 @@ import (
 	"time"
 )
 
-func newHandleRefresh(DB *sql.DB) func(w http.ResponseWriter, r *http.Request) {
+func newHandleRefresh(DB *sql.DB, mailer mail.Mailer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if err := validateAuthRequest(w, r); err != nil {

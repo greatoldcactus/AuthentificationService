@@ -2,6 +2,7 @@ package main
 
 import (
 	api "authservice/pkg/api"
+	"authservice/pkg/mail"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -37,9 +38,9 @@ func TestRefreshOk(t *testing.T) {
 
 	request.Header.Add("Guid", "hello")
 
-	mailer = &dummyMailer{}
+	var mailer mail.Mailer = &dummyMailer{}
 
-	handler := http.HandlerFunc(newHandleRefresh(DB))
+	handler := http.HandlerFunc(newHandleRefresh(DB, mailer))
 
 	handler.ServeHTTP(recorder, request)
 
@@ -79,7 +80,7 @@ func TestRefreshNoGuid(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	handler := http.HandlerFunc(newHandleRefresh(DB))
+	handler := http.HandlerFunc(newHandleRefresh(DB, mailer))
 
 	handler.ServeHTTP(recorder, request)
 
@@ -101,7 +102,7 @@ func TestRefreshTooMuchGuid(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	handler := http.HandlerFunc(newHandleRefresh(DB))
+	handler := http.HandlerFunc(newHandleRefresh(DB, mailer))
 
 	handler.ServeHTTP(recorder, request)
 
@@ -120,7 +121,7 @@ func TestRefreshInvalidMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	handler := http.HandlerFunc(newHandleRefresh(DB))
+	handler := http.HandlerFunc(newHandleRefresh(DB, mailer))
 
 	handler.ServeHTTP(recorder, request)
 
@@ -166,9 +167,9 @@ func TestRefreshIpChanged(t *testing.T) {
 
 	request.Header.Add("Guid", "hello")
 
-	mailer = &dummyMailer{}
+	var mailer mail.Mailer = &dummyMailer{}
 
-	handler := http.HandlerFunc(newHandleRefresh(DB))
+	handler := http.HandlerFunc(newHandleRefresh(DB, mailer))
 
 	handler.ServeHTTP(recorder, request)
 
@@ -226,9 +227,9 @@ func TestRefreshTokenExpired(t *testing.T) {
 
 	request.Header.Add("Guid", "hello")
 
-	mailer = &dummyMailer{}
+	var mailer mail.Mailer = &dummyMailer{}
 
-	handler := http.HandlerFunc(newHandleRefresh(DB))
+	handler := http.HandlerFunc(newHandleRefresh(DB, mailer))
 
 	handler.ServeHTTP(recorder, request)
 
