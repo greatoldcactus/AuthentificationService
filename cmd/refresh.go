@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 )
 
 func handleRefresh(w http.ResponseWriter, r *http.Request) {
@@ -44,6 +45,14 @@ func handleRefresh(w http.ResponseWriter, r *http.Request) {
 		log.Default().Printf("failed to load Refresh token from request: %v\n", err)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("there is incorrect Refresh token in request"))
+		return
+	}
+
+	if time.Now().After(refreshToken.Header.Expires) {
+		msg := "passed expired refresh token"
+		log.Default().Printf(msg)
+		w.Write([]byte(msg))
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
