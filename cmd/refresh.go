@@ -3,7 +3,9 @@ package main
 import (
 	api "authservice/pkg/api"
 	"authservice/pkg/auth"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -17,7 +19,7 @@ func handleRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// GUID := r.Header.Get("Guid")
+	GUID := r.Header.Get("Guid")
 	ip := r.RemoteAddr
 
 	body, err := io.ReadAll(r.Body)
@@ -62,8 +64,6 @@ func handleRefresh(w http.ResponseWriter, r *http.Request) {
 		mailer.SendWarning("authwarning@example.com", "user@example.com", msg)
 	}
 
-	// TODO add check for Refresh token signature
-
 	accessToken := p.AccessToken
 
 	accessTokenSignature, err := auth.CalculateAccessTokenHash(accessToken, secret)
@@ -88,6 +88,41 @@ func handleRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	requestHash, err := refreshToken.Hash(GUID)
+
+	if err != nil {
+		log.Printf("error when calculating Refresh token hash: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// Checking that Refresh token hash is contained in DB
+	row := DB.QueryRow("SELECT hash FROM REFRESH_TOKEN WHERE hash = $1", requestHash)
+
+	var resultHash string
+
+	if err != row.Scan(&resultHash) {
+		if errors.Is(err, sql.ErrNoRows) {
+			msg := "Invalid refresh token"
+			log.Default().Print(msg)
+			w.Write([]byte(msg))
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		log.Default().Printf("failed to query row from df: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	_, err = DB.Exec("DELETE FROM REFRESH_TOKEN WHERE token_hash = $1", requestHash)
+
+	if err != nil {
+		log.Default().Printf("error when deleting token hash from DB: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	// TODO invalidate old Refresh token in DB
 
 	tokenPair, err := generateAccessRefreshPair(ip)
@@ -102,6 +137,14 @@ func handleRefresh(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.Default().Println("auth answer json marshalling error error: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	_, err = DB.Exec("INSERT INTO REFRESH_TOKEN (hash, GUID) VALUES ($1, $2)", requestHash, GUID)
+
+	if err != nil {
+		log.Printf("error when writing new refresh token hash into DB: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
