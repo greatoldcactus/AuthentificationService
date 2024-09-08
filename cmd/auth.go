@@ -94,7 +94,7 @@ func handleAuth(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Default().Println("error when trying to generate Refresh Access token pair: %v", err)
+		log.Default().Printf("error when trying to generate Refresh Access token pair: %v\n", err)
 		return
 	}
 
