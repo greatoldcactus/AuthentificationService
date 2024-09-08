@@ -49,32 +49,43 @@ func generateAccessRefreshPair() (tokenPair RefreshAccessTokenPair, err error) {
 	return
 }
 
-func handleAuth(w http.ResponseWriter, r *http.Request) {
-
+func validateAuthRequest(w http.ResponseWriter, r *http.Request) error {
 	if r.Method != http.MethodPost {
+		msg := "must use POST"
 		w.WriteHeader(http.StatusBadRequest)
-		log.Default().Println("incorrect request: must use POST")
-		w.Write([]byte("incorrect request: must use POST"))
-		return
+		log.Default().Println(msg)
+		w.Write([]byte(msg))
+		return fmt.Errorf(msg)
 	}
 
 	GUIDs, ok := r.Header["guid"]
 
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
-		log.Default().Println("incorrect request: no GUID in request")
-		w.Write([]byte("there is no GUID in request"))
-		return
+		msg := "no GUID in request"
+		log.Default().Println(msg)
+		w.Write([]byte(msg))
+		return fmt.Errorf(msg)
 	}
 
 	if len(GUIDs) > 1 {
 		w.WriteHeader(http.StatusBadRequest)
-		log.Default().Println("incorrect request: too much GUID in request")
-		w.Write([]byte("too much GUID in request"))
+		msg := "too much GUID in request"
+		log.Default().Println(msg)
+		w.Write([]byte(msg))
+		return fmt.Errorf(msg)
+	}
+
+	return nil
+}
+
+func handleAuth(w http.ResponseWriter, r *http.Request) {
+
+	if err := validateAuthRequest(w, r); err != nil {
 		return
 	}
 
-	// GUID := GUIDs[0]
+	// GUID := r.Header.Get("GUID")
 	// addr := r.RemoteAddr
 	// TODO Add GUID to Refresh token hash calculation to ensure is was used by correct one
 	// TODO add saving of Refresh tokens to DB
