@@ -122,3 +122,72 @@ func TestRefreshInvalidMethod(t *testing.T) {
 		t.Fatalf("Passed wrong request with incorrect method")
 	}
 }
+
+type dummyMailer struct {
+	cnt int
+}
+
+func (m *dummyMailer) SendWarning(from, to string, msg string) {
+	fmt.Printf("new message from: %v, to: %v, content: %v", from, to, msg)
+	m.cnt++
+}
+
+func TestRefreshIpChanged(t *testing.T) {
+
+	recorder := httptest.NewRecorder()
+
+	tokens, err := generateAccessRefreshPair("127.0.0.1")
+
+	requestBody, err := json.Marshal(tokens)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	request, err := http.NewRequest(http.MethodPost, "/v1/auth", bytes.NewBuffer(requestBody))
+
+	request.RemoteAddr = "another addr"
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	request.Header.Add("Guid", "hello")
+
+	mailer = &dummyMailer{}
+
+	handler := http.HandlerFunc(handleRefresh)
+
+	handler.ServeHTTP(recorder, request)
+
+	if mailer.(*dummyMailer).cnt == 0 {
+		t.Fatalf("message must be sent!")
+	}
+
+	response := recorder.Result()
+
+	if response.StatusCode != 200 {
+		t.Fatalf("Request failed with code: %v", response.Status)
+	}
+
+	responseBody, err := io.ReadAll(response.Body)
+
+	if err != nil {
+		t.Fatalf("Failed to read response body")
+	}
+
+	var tokensResult api.RefreshAccessTokenPair
+
+	err = json.Unmarshal(responseBody, &tokensResult)
+
+	if err != nil {
+		t.Fatalf("failed to unmarshall answer from server: %v", err)
+	}
+
+	fmt.Printf("%#v", tokensResult)
+
+}
