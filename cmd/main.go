@@ -28,9 +28,9 @@ func main() {
 		panic(err)
 	}
 
-	http.HandleFunc("/v1/auth", handleAuth)
+	http.HandleFunc("/v1/auth", newHandleAuth(DB))
 
-	http.HandleFunc("/v1/refresh", handleRefresh)
+	http.HandleFunc("/v1/refresh", newHandleRefresh(DB))
 
 	http.ListenAndServe(":5555", nil)
 }

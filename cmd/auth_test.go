@@ -20,7 +20,7 @@ func TestAuthOk(t *testing.T) {
 
 	request.Header.Add("Guid", "hello")
 
-	handler := http.HandlerFunc(handleAuth)
+	handler := http.HandlerFunc(newHandleAuth(DB))
 
 	handler.ServeHTTP(recorder, request)
 
@@ -54,7 +54,7 @@ func TestAuthNoGuid(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	handler := http.HandlerFunc(handleAuth)
+	handler := http.HandlerFunc(newHandleAuth(DB))
 
 	handler.ServeHTTP(recorder, request)
 
@@ -76,7 +76,7 @@ func TestAuthTooMuchGuid(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	handler := http.HandlerFunc(handleAuth)
+	handler := http.HandlerFunc(newHandleAuth(DB))
 
 	handler.ServeHTTP(recorder, request)
 
@@ -95,7 +95,7 @@ func TestAuthInvalidMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	handler := http.HandlerFunc(handleAuth)
+	handler := http.HandlerFunc(newHandleAuth(DB))
 
 	handler.ServeHTTP(recorder, request)
 

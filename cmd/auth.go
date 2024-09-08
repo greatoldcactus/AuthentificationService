@@ -3,6 +3,7 @@ package main
 import (
 	api "authservice/pkg/api"
 	"authservice/pkg/auth"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -67,33 +68,36 @@ func validateAuthRequest(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func handleAuth(w http.ResponseWriter, r *http.Request) {
+func newHandleAuth(DB *sql.DB) func(w http.ResponseWriter, r *http.Request) {
 
-	if err := validateAuthRequest(w, r); err != nil {
-		return
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		if err := validateAuthRequest(w, r); err != nil {
+			return
+		}
+
+		// GUID := r.Header.Get("Guid")
+		// TODO Add GUID to Refresh token hash calculation to ensure is was used by correct one
+		// TODO add saving of Refresh tokens to DB
+
+		ip := r.RemoteAddr
+
+		tokenPair, err := generateAccessRefreshPair(ip)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Default().Printf("error when trying to generate Refresh Access token pair: %v\n", err)
+			return
+		}
+
+		answerJson, err := json.Marshal(tokenPair)
+
+		if err != nil {
+			log.Default().Println("auth answer json marshalling error error: ", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.Write(answerJson)
 	}
-
-	// GUID := r.Header.Get("Guid")
-	// TODO Add GUID to Refresh token hash calculation to ensure is was used by correct one
-	// TODO add saving of Refresh tokens to DB
-
-	ip := r.RemoteAddr
-
-	tokenPair, err := generateAccessRefreshPair(ip)
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Default().Printf("error when trying to generate Refresh Access token pair: %v\n", err)
-		return
-	}
-
-	answerJson, err := json.Marshal(tokenPair)
-
-	if err != nil {
-		log.Default().Println("auth answer json marshalling error error: ", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.Write(answerJson)
 }

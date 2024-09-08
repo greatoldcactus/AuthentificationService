@@ -39,7 +39,7 @@ func TestRefreshOk(t *testing.T) {
 
 	mailer = &dummyMailer{}
 
-	handler := http.HandlerFunc(handleRefresh)
+	handler := http.HandlerFunc(newHandleRefresh(DB))
 
 	handler.ServeHTTP(recorder, request)
 
@@ -79,7 +79,7 @@ func TestRefreshNoGuid(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	handler := http.HandlerFunc(handleRefresh)
+	handler := http.HandlerFunc(newHandleRefresh(DB))
 
 	handler.ServeHTTP(recorder, request)
 
@@ -101,7 +101,7 @@ func TestRefreshTooMuchGuid(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	handler := http.HandlerFunc(handleRefresh)
+	handler := http.HandlerFunc(newHandleRefresh(DB))
 
 	handler.ServeHTTP(recorder, request)
 
@@ -120,7 +120,7 @@ func TestRefreshInvalidMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	handler := http.HandlerFunc(handleRefresh)
+	handler := http.HandlerFunc(newHandleRefresh(DB))
 
 	handler.ServeHTTP(recorder, request)
 
@@ -168,7 +168,7 @@ func TestRefreshIpChanged(t *testing.T) {
 
 	mailer = &dummyMailer{}
 
-	handler := http.HandlerFunc(handleRefresh)
+	handler := http.HandlerFunc(newHandleRefresh(DB))
 
 	handler.ServeHTTP(recorder, request)
 
@@ -228,7 +228,7 @@ func TestRefreshTokenExpired(t *testing.T) {
 
 	mailer = &dummyMailer{}
 
-	handler := http.HandlerFunc(handleRefresh)
+	handler := http.HandlerFunc(newHandleRefresh(DB))
 
 	handler.ServeHTTP(recorder, request)
 
