@@ -9,7 +9,7 @@ import (
 // TODO add loading from environment?
 var secret string = "my secret"
 
-// RefreshAccessTokenPair is
+// RefreshAccessTokenPair is pair of Refresh and Access tokens that is used in Refresh and Auth request
 type RefreshAccessTokenPair struct {
 	AccessToken  tokens.AccessToken `json:"access_token"`
 	RefreshToken string             `json:"refresh_token"`
