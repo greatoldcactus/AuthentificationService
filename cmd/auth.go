@@ -10,18 +10,6 @@ import (
 	"time"
 )
 
-// TODO add loading from environment?
-var secret string = "my secret"
-
-// RefreshAccessTokenPair is
-type RefreshAccessTokenPair struct {
-	AccessToken  tokens.AccessToken `json:"access_token"`
-	RefreshToken string             `json:"refresh_token"`
-}
-
-const AccessTokenDuration time.Duration = time.Hour * 2
-const RefreshTokenDuration time.Duration = time.Hour * 24 * 30
-
 func generateAccessRefreshPair() (tokenPair RefreshAccessTokenPair, err error) {
 	accessToken := tokens.NewAccessToken(time.Now().Add(AccessTokenDuration))
 
