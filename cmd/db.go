@@ -46,7 +46,7 @@ func CheckRefreshTokenHash(w http.ResponseWriter, r *http.Request, DB *sql.DB, h
 			return err
 		}
 
-		log.Default().Printf("failed to query row from df: %v", err)
+		log.Default().Printf("failed to query row from db: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return err
 	}
