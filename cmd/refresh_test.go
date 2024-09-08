@@ -35,7 +35,7 @@ func TestRefreshOk(t *testing.T) {
 
 	request.Header.Add("Guid", "hello")
 
-	handler := http.HandlerFunc(handleAuth)
+	handler := http.HandlerFunc(handleRefresh)
 
 	handler.ServeHTTP(recorder, request)
 
@@ -71,7 +71,7 @@ func TestRefreshNoGuid(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	handler := http.HandlerFunc(handleAuth)
+	handler := http.HandlerFunc(handleRefresh)
 
 	handler.ServeHTTP(recorder, request)
 
@@ -93,7 +93,7 @@ func TestRefreshTooMuchGuid(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	handler := http.HandlerFunc(handleAuth)
+	handler := http.HandlerFunc(handleRefresh)
 
 	handler.ServeHTTP(recorder, request)
 
@@ -112,7 +112,7 @@ func TestRefreshInvalidMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	handler := http.HandlerFunc(handleAuth)
+	handler := http.HandlerFunc(handleRefresh)
 
 	handler.ServeHTTP(recorder, request)
 
