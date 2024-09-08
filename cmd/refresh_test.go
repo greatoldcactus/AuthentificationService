@@ -32,10 +32,6 @@ func TestRefreshOk(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	request.Header.Add("Guid", "hello")
 
 	var mailer mail.Mailer = &dummyMailer{}
