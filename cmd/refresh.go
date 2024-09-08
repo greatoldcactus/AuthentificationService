@@ -4,6 +4,7 @@ import (
 	api "authservice/pkg/api"
 	"authservice/pkg/auth"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -44,6 +45,12 @@ func handleRefresh(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("there is incorrect Refresh token in request"))
 		return
+	}
+
+	// TODO add user email from DB
+	if refreshToken.Payload.Ip != ip {
+		msg := fmt.Sprintf("warning attempting token refresh from another IP.\nOld ip: %v\nNew ip: %v", refreshToken.Payload.Ip, ip)
+		mailer.SendWarning("authwarning@example.com", "user@example.com", msg)
 	}
 
 	// TODO add check for Refresh token signature
