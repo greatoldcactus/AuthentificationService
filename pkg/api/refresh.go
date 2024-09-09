@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -112,6 +113,9 @@ func (t RefreshToken) Verify(guid string, hash string) (bool, error) {
 	err = bcrypt.CompareHashAndPassword(decodedHash, shaHash)
 
 	if err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return false, nil
+		}
 		return false, err
 	}
 

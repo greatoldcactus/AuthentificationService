@@ -6,6 +6,7 @@ import (
 	"authservice/pkg/mail"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -99,27 +100,64 @@ func newHandleRefresh(DB *sql.DB, mailer mail.Mailer) func(w http.ResponseWriter
 
 		tx, err := DB.Begin()
 
+		if err != nil {
+			log.Printf("error starting transaction: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		defer func() {
 			if err != nil {
 				tx.Rollback()
 			}
 		}()
 
-		if err = CheckRefreshTokenHash(w, r, DB, requestHash); err != nil {
+		session := p.AccessToken.Payload.Session
+
+		hash, err := GetSessionHash(tx, session)
+
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				log.Printf("Refrsh token hash not found")
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte("session not found"))
+				return
+			} else {
+				log.Printf("error when trying to check refresh token hash in database: %v", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+		}
+
+		ok, err := refreshToken.Verify(GUID, hash)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Default().Printf("error when trying to check access token hash: %v", err)
 			return
 		}
 
-		if err = DeleteRefreshTokenHash(w, r, DB, requestHash); err != nil {
+		if !ok {
+			w.WriteHeader(http.StatusUnauthorized)
+			log.Default().Printf("incorrecr refresh token hash")
+			w.Write([]byte("Incorrect hash"))
 			return
 		}
 
-		// TODO invalidate old Refresh token in DB
-
-		tokenPair, err := generateAccessRefreshPair(ip, "")
+		newAccessToken, newRefreshToken, err := generateAccessRefreshTokens(ip, session)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Default().Printf("error when trying to generate Refresh Access token pair: %v", err)
+			return
+		}
+
+		tokenPair, err := makeTokenPair(newAccessToken, newRefreshToken)
+
+		if err != nil {
+			log.Default().Println("failed to make token pair: ", err)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
@@ -131,7 +169,9 @@ func newHandleRefresh(DB *sql.DB, mailer mail.Mailer) func(w http.ResponseWriter
 			return
 		}
 
-		if err = AddRefreshTokenHash(w, r, DB, requestHash, GUID); err != nil {
+		if err = UpdateSession(tx, requestHash, session, newRefreshToken.Header.Expires); err != nil {
+			log.Default().Println("failed to update session: ", err)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
