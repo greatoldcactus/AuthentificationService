@@ -209,6 +209,8 @@ func TestRefresh(t *testing.T) {
 	for _, test := range tests {
 		mt := &sync.Mutex{}
 		t.Run(test.Name, func(t *testing.T) {
+			// Locking is necessary because the SQLite in-memory database can only have one instance;
+			// Concurrent tests will cause failures otherwise.
 			mt.Lock()
 			defer mt.Unlock()
 			err := runRefreshTest(test)
