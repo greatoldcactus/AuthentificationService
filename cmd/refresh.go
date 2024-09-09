@@ -141,6 +141,7 @@ func newHandleRefresh(DB *sql.DB, mailer mail.Mailer) func(w http.ResponseWriter
 			return
 		}
 
+		w.Header().Set("Content-Type", "application/json")
 		w.Write(answerJson)
 
 	}
