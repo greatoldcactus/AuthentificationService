@@ -8,7 +8,7 @@ import (
 )
 
 func TestCalculateAccessTokenHash(t *testing.T) {
-	token := api.NewAccessToken(time.Now())
+	token := api.NewAccessToken(time.Now(), "session")
 
 	secret := "my interesting secret"
 
@@ -38,7 +38,7 @@ func TestCalculateAccessTokenHash(t *testing.T) {
 }
 
 func TestSignAccessToken(t *testing.T) {
-	token := api.NewAccessToken(time.Now())
+	token := api.NewAccessToken(time.Now(), "session")
 	secret := "my inrerecting token"
 
 	signature, err := CalculateAccessTokenHash(token, secret)

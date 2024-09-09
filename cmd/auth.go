@@ -11,8 +11,8 @@ import (
 	"time"
 )
 
-func generateAccessRefreshPair(ip string) (tokenPair api.RefreshAccessTokenPair, err error) {
-	accessToken := api.NewAccessToken(time.Now().Add(AccessTokenDuration))
+func generateAccessRefreshPair(ip string, session string) (tokenPair api.RefreshAccessTokenPair, err error) {
+	accessToken := api.NewAccessToken(time.Now().Add(AccessTokenDuration), session)
 
 	err = auth.SignAccessToken(&accessToken, secret)
 
@@ -82,7 +82,7 @@ func newHandleAuth(DB *sql.DB) func(w http.ResponseWriter, r *http.Request) {
 
 		ip := r.RemoteAddr
 
-		tokenPair, err := generateAccessRefreshPair(ip)
+		tokenPair, err := generateAccessRefreshPair(ip, "")
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)

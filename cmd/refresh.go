@@ -115,7 +115,7 @@ func newHandleRefresh(DB *sql.DB, mailer mail.Mailer) func(w http.ResponseWriter
 
 		// TODO invalidate old Refresh token in DB
 
-		tokenPair, err := generateAccessRefreshPair(ip)
+		tokenPair, err := generateAccessRefreshPair(ip, "")
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)

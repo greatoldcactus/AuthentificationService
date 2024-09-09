@@ -17,7 +17,7 @@ func TestRefreshOk(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	ip := "127.0.0.1"
-	tokens, err := generateAccessRefreshPair(ip)
+	tokens, err := generateAccessRefreshPair(ip, "")
 
 	requestBody, err := json.Marshal(tokens)
 
@@ -141,7 +141,7 @@ func TestRefreshIpChanged(t *testing.T) {
 
 	recorder := httptest.NewRecorder()
 
-	tokens, err := generateAccessRefreshPair("127.0.0.1")
+	tokens, err := generateAccessRefreshPair("127.0.0.1", "")
 
 	requestBody, err := json.Marshal(tokens)
 
@@ -201,7 +201,7 @@ func TestRefreshTokenExpired(t *testing.T) {
 
 	recorder := httptest.NewRecorder()
 
-	tokens, err := generateAccessRefreshPair("")
+	tokens, err := generateAccessRefreshPair("", "")
 
 	requestBody, err := json.Marshal(tokens)
 

@@ -12,6 +12,7 @@ type AccessToken struct {
 // AccessTokenPayload is payload for AccessToken
 // Currently empty
 type AccessTokenPayload struct {
+	Session string `json:"session"`
 }
 
 // Header for AccessToken
@@ -22,12 +23,15 @@ type AccessTokenHeader struct {
 }
 
 // NewAccessToken creates a new AccessToken with a specified expiration time.
-func NewAccessToken(Exp time.Time) AccessToken {
+func NewAccessToken(Exp time.Time, session string) AccessToken {
 	return AccessToken{
 		Header: AccessTokenHeader{
 			Type: "JWT",
 			Alg:  "SHA512",
 			Exp:  Exp,
+		},
+		Payload: AccessTokenPayload{
+			Session: session,
 		},
 	}
 }

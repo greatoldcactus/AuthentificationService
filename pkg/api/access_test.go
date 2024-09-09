@@ -7,7 +7,7 @@ import (
 )
 
 func TestNewAccessTokenCreation(t *testing.T) {
-	token := NewAccessToken(time.Now())
+	token := NewAccessToken(time.Now(), "session")
 
 	fmt.Printf("token: %#v", token)
 
