@@ -21,7 +21,7 @@ RUN go build -o main ./cmd/*
 # But we can document in the Dockerfile what ports
 # the application is going to listen on by default.
 # https://docs.docker.com/reference/dockerfile/#expose
-EXPOSE 8080
+EXPOSE 5555
 
 # Run
 CMD ["./main"]
