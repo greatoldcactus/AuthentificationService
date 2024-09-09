@@ -1,7 +1,6 @@
 package tokens
 
 import (
-	"fmt"
 	"testing"
 	"time"
 )
@@ -48,6 +47,36 @@ func TestLoadRefreshTokenFromBase64(t *testing.T) {
 	}
 }
 
+func TestRefreshToken_Verify(t *testing.T) {
+	token := NewRefreshToken("hello", time.Now(), "your ip")
+
+	GUID := "h"
+
+	hash, err := token.Hash(GUID)
+
+	if err != nil {
+		t.Fatalf("failed to calculate token hash: %v", err)
+	}
+
+	if ok, err := token.Verify(GUID, hash); err != nil {
+		t.Fatalf("failed to verify token hash: %v", err)
+	} else {
+		if !ok {
+			t.Fatalf("token wasn't changed, but verify failed!")
+		}
+	}
+
+	token.Payload.Ip += "!!!"
+
+	if ok, err := token.Verify(GUID, hash); err == nil {
+		t.Fatalf("token was changed, but Verify returned that it was equal!")
+	} else {
+		if ok {
+			t.Fatalf("token was changed, but Verify returned that it was equal!")
+		}
+	}
+}
+
 func TestRefreshTokenHashChangeAfterLoad(t *testing.T) {
 
 	token := NewRefreshToken("hello", time.Now(), "your ip")
@@ -72,16 +101,12 @@ func TestRefreshTokenHashChangeAfterLoad(t *testing.T) {
 		t.Errorf("failed to calculate token hash: %v", err)
 	}
 
-	hash2, err := tokenLoaded.Hash(guid)
-
-	if err != nil {
-		t.Errorf("failed to calculate token hash: %v", err)
-	}
-
-	if hash1 != hash2 {
-		fmt.Printf("hashes: \n%v\n%v\n", hash1, hash2)
-		fmt.Printf("tokens: \n%#v\n%#v\n", token, tokenLoaded)
-		t.Errorf("token hash was changed after saving and loading!")
+	if ok, err := tokenLoaded.Verify(guid, hash1); err != nil {
+		t.Errorf("failed to verify token hash")
+	} else {
+		if !ok {
+			t.Errorf("token hash was changed after loading!")
+		}
 	}
 }
 

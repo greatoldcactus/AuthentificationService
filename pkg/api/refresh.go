@@ -52,23 +52,23 @@ func (t RefreshToken) Base64() (string, error) {
 	return base64.StdEncoding.EncodeToString(tokenJson), nil
 }
 
-// Hash method is used to compute bcrypt hash of RefreshToken
-func (t RefreshToken) Hash(guid string) (string, error) {
-
-	json, err := json.Marshal(t)
+// calcSHA256Cut calculates a SHA-256 hash for the token, truncating it to 72 bytes.
+// The process involves marshaling the token to JSON, hashing it, and appending a GUID.
+func (t RefreshToken) calcSHA256Cut(guid string) ([]byte, error) {
+	jsonData, err := json.Marshal(t)
 
 	if err != nil {
-		return "", fmt.Errorf("failed to marshall RefreshToken: %w", err)
+		return nil, fmt.Errorf("failed to marshall RefreshToken: %w", err)
 	}
 
 	shaHasher := sha256.New()
 
-	if _, err = shaHasher.Write(json); err != nil {
-		return "", fmt.Errorf("failed to calculate sha256 hash of RefreshToken json: %w", err)
+	if _, err = shaHasher.Write(jsonData); err != nil {
+		return nil, fmt.Errorf("failed to calculate sha256 hash of RefreshToken json: %w", err)
 	}
 
 	if _, err = shaHasher.Write([]byte(guid)); err != nil {
-		return "", fmt.Errorf("failed to calculate sha256 hash of RefreshToken json: %w", err)
+		return nil, fmt.Errorf("failed to calculate sha256 hash of RefreshToken json: %w", err)
 	}
 
 	hash := shaHasher.Sum(nil)
@@ -78,13 +78,44 @@ func (t RefreshToken) Hash(guid string) (string, error) {
 		hash = hash[:72]
 	}
 
-	hash, err = bcrypt.GenerateFromPassword(hash, bcrypt.DefaultCost)
+	return hash, nil
+}
+
+// Hash computes a bcrypt hash of the RefreshToken using the provided GUID.
+func (t RefreshToken) Hash(guid string) (string, error) {
+
+	shaHash, err := t.calcSHA256Cut(guid)
+
+	if err != nil {
+		return "", err
+	}
+
+	hash, err := bcrypt.GenerateFromPassword(shaHash, bcrypt.DefaultCost)
 
 	if err != nil {
 		return "", fmt.Errorf("failed to calculate bcrypt hash for refresh token: %w", err)
 	}
 
 	return base64.StdEncoding.EncodeToString(hash), nil
+}
+
+// Verify checks if the provided hash matches the hash of the current RefreshToken.
+func (t RefreshToken) Verify(guid string, hash string) (bool, error) {
+	shaHash, err := t.calcSHA256Cut(guid)
+
+	if err != nil {
+		return false, err
+	}
+
+	decodedHash, err := base64.StdEncoding.DecodeString(hash)
+
+	err = bcrypt.CompareHashAndPassword(decodedHash, shaHash)
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 // LoadRefreshTokenFromBase64 loads Refresh token from base64 encoding
