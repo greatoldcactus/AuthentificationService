@@ -36,8 +36,6 @@ func runRefreshTest(test testDataRefresh) error {
 
 	session := ""
 
-	// TODO add wrong session check
-
 	tokens, err := generateAccessRefreshPair(ip, session)
 
 	if test.WrongSession {
