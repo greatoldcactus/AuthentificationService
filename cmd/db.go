@@ -12,16 +12,33 @@ import (
 var DB *sql.DB
 
 func ConnectDB() error {
-	connectionInfo := os.Getenv("CONNECTION_STRING")
+	connectionString := os.Getenv("CONNECTION_STRING")
 
-	if connectionInfo == "" {
-		return fmt.Errorf("db connection string is empty")
+	if connectionString == "" {
+		host := os.Getenv("DB_HOST")
+		port := os.Getenv("DB_PORT")
+		user := os.Getenv("DB_USER")
+		password := os.Getenv("DB_PASSWORD")
+		dbName := os.Getenv("DB_NAME")
+
+		if host == "" || port == "" || user == "" || password == "" || dbName == "" {
+			return fmt.Errorf(`
+unable to connect to DB there is no defined connection strngs or separete connection varibales
+connection string variable: CONNECTION_STRING
+`)
+		}
+
+		connectionString = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbName)
 	}
 
-	db, err := sql.Open("postgres", connectionInfo)
+	db, err := sql.Open("postgres", connectionString)
 
 	if err != nil {
 		return fmt.Errorf("failed to connect db: %v", err)
+	}
+
+	if err := db.Ping(); err != nil {
+		return fmt.Errorf("failed to ping database with error: %v", err)
 	}
 
 	DB = db
