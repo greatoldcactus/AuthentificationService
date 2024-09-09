@@ -9,7 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -21,12 +21,14 @@ type testDataRefresh struct {
 	MustFail          bool
 	DBHasNotToken     bool
 	WrongHash         bool
-	GUID              string
+	GUID              []string
 	Name              string
 	ChangeAccessToken bool
 	ChangeGuid        bool
 	MustMail          bool
 	WrongSession      bool
+	Method            string
+	TokenExpired      bool
 }
 
 func runRefreshTest(test testDataRefresh) error {
@@ -63,11 +65,20 @@ func runRefreshTest(test testDataRefresh) error {
 	request, err := http.NewRequest(http.MethodPost, "/v1/auth", bytes.NewBuffer(requestBody))
 	request.RemoteAddr = ip
 
-	if !test.ChangeGuid {
-		request.Header.Set("Guid", test.GUID)
+	var guid string
+	if len(test.GUID) > 0 {
+		guid = test.GUID[0]
 	} else {
-		request.Header.Set("Guid", "not "+test.GUID)
+		guid = "guid"
 	}
+
+	if !test.ChangeGuid {
+		request.Header["Guid"] = test.GUID
+	} else {
+		request.Header.Set("Guid", "changed GUID")
+	}
+
+	request.Method = test.Method
 
 	var mailer mail.Mailer = &dummyMailer{}
 
@@ -88,7 +99,7 @@ func runRefreshTest(test testDataRefresh) error {
 		}
 
 		if !test.WrongHash {
-			hash, err = refreshToken.Hash(test.GUID)
+			hash, err = refreshToken.Hash(guid)
 
 			if err != nil {
 				return err
@@ -97,7 +108,7 @@ func runRefreshTest(test testDataRefresh) error {
 
 		fmt.Println("used hash: ", hash)
 
-		err = AddSession(DB, hash, test.GUID, session, refreshToken.Header.Expires)
+		err = AddSession(DB, hash, guid, session, refreshToken.Header.Expires)
 		if err != nil {
 			return err
 		}
@@ -156,79 +167,58 @@ func TestRefresh(t *testing.T) {
 
 	tests := []testDataRefresh{
 		testDataRefresh{
-			GUID:      "hello",
+			GUID:      []string{"hello"},
 			Name:      "Ok",
 			MustFail:  false,
 			WrongHash: false,
+			Method:    http.MethodPost,
+		}, testDataRefresh{
+			GUID:      []string{},
+			Name:      "No GUID",
+			MustFail:  true,
+			WrongHash: false,
+			Method:    http.MethodPost,
+		}, testDataRefresh{
+			GUID:      []string{"hello", "there"},
+			Name:      "Too much GUID",
+			MustFail:  true,
+			WrongHash: false,
+			Method:    http.MethodPost,
+		}, testDataRefresh{
+			GUID:      []string{"hello"},
+			Name:      "Invalid method",
+			MustFail:  true,
+			WrongHash: false,
+			Method:    http.MethodGet,
+		}, testDataRefresh{
+			GUID:      []string{"hello"},
+			Name:      "Must post",
+			MustFail:  false,
+			WrongHash: false,
+			MustMail:  true,
+			ChangeIP:  true,
+			Method:    http.MethodPost,
+		}, testDataRefresh{
+			GUID:         []string{"hello"},
+			Name:         "Wrong session",
+			MustFail:     true,
+			WrongHash:    false,
+			WrongSession: true,
+			Method:       http.MethodPost,
 		},
 	}
 
 	for _, test := range tests {
-		err := runRefreshTest(test)
-		if err != nil {
-			t.Logf("Test %v failed with error: %v", test.Name, err)
-			t.Fail()
-		}
-	}
-}
-
-func TestRefreshNoGuid(t *testing.T) {
-	recorder := httptest.NewRecorder()
-	request, err := http.NewRequest(http.MethodPost, "/v1/auth", strings.NewReader(""))
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	handler := http.HandlerFunc(newHandleRefresh(DB, mailer))
-
-	handler.ServeHTTP(recorder, request)
-
-	response := recorder.Result()
-
-	if response.StatusCode == 200 {
-		t.Fatalf("Passed wrong request with no GUID")
-	}
-}
-
-func TestRefreshTooMuchGuid(t *testing.T) {
-	recorder := httptest.NewRecorder()
-	request, err := http.NewRequest(http.MethodPost, "/v1/auth", strings.NewReader(""))
-
-	request.Header.Add("Guid", "hello")
-	request.Header.Add("Guid", "there")
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	handler := http.HandlerFunc(newHandleRefresh(DB, mailer))
-
-	handler.ServeHTTP(recorder, request)
-
-	response := recorder.Result()
-
-	if response.StatusCode == 200 {
-		t.Fatalf("Passed wrong request with too much GUID")
-	}
-}
-
-func TestRefreshInvalidMethod(t *testing.T) {
-	recorder := httptest.NewRecorder()
-	request, err := http.NewRequest(http.MethodGet, "/v1/auth", strings.NewReader(""))
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	handler := http.HandlerFunc(newHandleRefresh(DB, mailer))
-
-	handler.ServeHTTP(recorder, request)
-
-	response := recorder.Result()
-
-	if response.StatusCode == 200 {
-		t.Fatalf("Passed wrong request with incorrect method")
+		mt := &sync.Mutex{}
+		t.Run(test.Name, func(t *testing.T) {
+			mt.Lock()
+			defer mt.Unlock()
+			err := runRefreshTest(test)
+			if err != nil {
+				t.Logf("Test %v failed with error: %v", test.Name, err)
+				t.Fail()
+			}
+		})
 	}
 }
 
@@ -239,124 +229,4 @@ type dummyMailer struct {
 func (m *dummyMailer) SendWarning(from, to string, msg string) {
 	fmt.Printf("new message from: %v, to: %v, content: %v", from, to, msg)
 	m.cnt++
-}
-
-func TestRefreshIpChanged(t *testing.T) {
-
-	recorder := httptest.NewRecorder()
-
-	tokens, err := generateAccessRefreshPair("127.0.0.1", "")
-
-	requestBody, err := json.Marshal(tokens)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	request, err := http.NewRequest(http.MethodPost, "/v1/auth", bytes.NewBuffer(requestBody))
-
-	request.RemoteAddr = "another addr"
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	request.Header.Add("Guid", "hello")
-
-	var mailer mail.Mailer = &dummyMailer{}
-
-	handler := http.HandlerFunc(newHandleRefresh(DB, mailer))
-
-	handler.ServeHTTP(recorder, request)
-
-	if mailer.(*dummyMailer).cnt == 0 {
-		t.Fatalf("message must be sent!")
-	}
-
-	response := recorder.Result()
-
-	if response.StatusCode != 200 {
-		t.Fatalf("Request failed with code: %v", response.Status)
-	}
-
-	responseBody, err := io.ReadAll(response.Body)
-
-	if err != nil {
-		t.Fatalf("Failed to read response body")
-	}
-
-	var tokensResult api.RefreshAccessTokenPair
-
-	err = json.Unmarshal(responseBody, &tokensResult)
-
-	if err != nil {
-		t.Fatalf("failed to unmarshall answer from server: %v", err)
-	}
-
-	fmt.Printf("%#v", tokensResult)
-
-}
-
-func TestRefreshTokenExpired(t *testing.T) {
-
-	recorder := httptest.NewRecorder()
-
-	tokens, err := generateAccessRefreshPair("", "")
-
-	requestBody, err := json.Marshal(tokens)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	request, err := http.NewRequest(http.MethodPost, "/v1/auth", bytes.NewBuffer(requestBody))
-
-	request.RemoteAddr = ""
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	request.Header.Add("Guid", "hello")
-
-	var mailer mail.Mailer = &dummyMailer{}
-
-	handler := http.HandlerFunc(newHandleRefresh(DB, mailer))
-
-	handler.ServeHTTP(recorder, request)
-
-	if mailer.(*dummyMailer).cnt == 0 {
-		t.Fatalf("message must be sent!")
-	}
-
-	response := recorder.Result()
-
-	if response.StatusCode != 200 {
-		t.Fatalf("Request failed with code: %v", response.Status)
-	}
-
-	responseBody, err := io.ReadAll(response.Body)
-
-	if err != nil {
-		t.Fatalf("Failed to read response body")
-	}
-
-	var tokensResult api.RefreshAccessTokenPair
-
-	err = json.Unmarshal(responseBody, &tokensResult)
-
-	if err != nil {
-		t.Fatalf("failed to unmarshall answer from server: %v", err)
-	}
-
-	fmt.Printf("%#v", tokensResult)
-
 }

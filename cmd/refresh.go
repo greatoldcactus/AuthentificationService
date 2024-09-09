@@ -118,7 +118,7 @@ func newHandleRefresh(DB *sql.DB, mailer mail.Mailer) func(w http.ResponseWriter
 
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				log.Printf("Refrsh token hash not found")
+				log.Printf("Refresh token hash not found")
 				w.WriteHeader(http.StatusUnauthorized)
 				w.Write([]byte("session not found"))
 				return
