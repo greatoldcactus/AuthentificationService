@@ -2,6 +2,7 @@ package main
 
 import (
 	api "authservice/pkg/api"
+	"database/sql"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -9,6 +10,49 @@ import (
 	"strings"
 	"testing"
 )
+
+func CreateTestingBD() (*sql.DB, error) {
+	DB, err := sql.Open("sqlite3", ":memory:")
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		if err != nil {
+			DB.Close()
+		}
+	}()
+
+	tx, err := DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	_, err = tx.Exec(`CREATE TABLE sessions (
+		session_id TEXT PRIMARY KEY,
+		GUID TEXT NOT NULL, 
+		token_hash TEXT NOT NULL, 
+		expires_at TIME)
+		`)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return DB, nil
+
+}
 
 func TestAuthOk(t *testing.T) {
 	recorder := httptest.NewRecorder()
@@ -18,7 +62,15 @@ func TestAuthOk(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	guid := "hello"
+
 	request.Header.Add("Guid", "hello")
+
+	DB, err := CreateTestingBD()
+
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	handler := http.HandlerFunc(newHandleAuth(DB))
 
@@ -44,6 +96,30 @@ func TestAuthOk(t *testing.T) {
 		t.Fatalf("failed to unmarshall answer from server: %v", err)
 	}
 
+	refreshToken, err := api.LoadRefreshTokenFromBase64(tokens.RefreshToken)
+
+	if err != nil {
+		t.Fatalf("failed to load Refresh token from base64: %v", err)
+	}
+
+	session := tokens.AccessToken.Payload.Session
+
+	hash, err := GetSessionHash(DB, session)
+
+	if err != nil {
+		t.Fatalf("failed to get hash for session: %v, err: %v", session, err)
+	}
+
+	result, err := refreshToken.Verify(guid, hash)
+
+	if err != nil {
+		t.Fatalf("failed to verify refresh token: %v", err)
+	}
+
+	if !result {
+		t.Fatalf("session was not saved")
+	}
+
 }
 
 func TestAuthNoGuid(t *testing.T) {
@@ -54,6 +130,11 @@ func TestAuthNoGuid(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	DB, err := CreateTestingBD()
+
+	if err != nil {
+		t.Fatal(err)
+	}
 	handler := http.HandlerFunc(newHandleAuth(DB))
 
 	handler.ServeHTTP(recorder, request)
@@ -76,6 +157,11 @@ func TestAuthTooMuchGuid(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	DB, err := CreateTestingBD()
+
+	if err != nil {
+		t.Fatal(err)
+	}
 	handler := http.HandlerFunc(newHandleAuth(DB))
 
 	handler.ServeHTTP(recorder, request)
@@ -95,6 +181,11 @@ func TestAuthInvalidMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	DB, err := CreateTestingBD()
+
+	if err != nil {
+		t.Fatal(err)
+	}
 	handler := http.HandlerFunc(newHandleAuth(DB))
 
 	handler.ServeHTTP(recorder, request)

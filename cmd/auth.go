@@ -9,10 +9,12 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/google/uuid"
 )
 
-func generateAccessRefreshPair(ip string, session string) (tokenPair api.RefreshAccessTokenPair, err error) {
-	accessToken := api.NewAccessToken(time.Now().Add(AccessTokenDuration), session)
+func generateAccessRefreshTokens(ip string, session string) (accessToken api.AccessToken, refreshToken api.RefreshToken, err error) {
+	accessToken = api.NewAccessToken(time.Now().Add(AccessTokenDuration), session)
 
 	err = auth.SignAccessToken(&accessToken, secret)
 
@@ -21,20 +23,31 @@ func generateAccessRefreshPair(ip string, session string) (tokenPair api.Refresh
 		return
 	}
 
-	refreshToken := api.NewRefreshToken(accessToken.Signature, time.Now().Add(RefreshTokenDuration), ip)
+	refreshToken = api.NewRefreshToken(accessToken.Signature, time.Now().Add(RefreshTokenDuration), ip)
 
+	return accessToken, refreshToken, nil
+}
+
+func makeTokenPair(accessToken api.AccessToken, refreshToken api.RefreshToken) (tokenPair api.RefreshAccessTokenPair, err error) {
 	refreshTokenBase64, err := refreshToken.Base64()
-
-	if err != nil {
-		err = fmt.Errorf("Refresh token base64 encoding error when Refresh Access token pair generation: %w", err)
-		return
-	}
 
 	tokenPair = api.RefreshAccessTokenPair{
 		RefreshToken: refreshTokenBase64,
 		AccessToken:  accessToken,
 	}
 
+	return
+}
+
+func generateAccessRefreshPair(ip string, session string) (tokenPair api.RefreshAccessTokenPair, err error) {
+	accessToken, refreshToken, err := generateAccessRefreshTokens(ip, session)
+
+	if err != nil {
+		err = fmt.Errorf("Refresh token base64 encoding error when Refresh Access token pair generation: %w", err)
+		return
+	}
+
+	tokenPair, err = makeTokenPair(accessToken, refreshToken)
 	return
 }
 
@@ -76,17 +89,54 @@ func newHandleAuth(DB *sql.DB) func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// GUID := r.Header.Get("Guid")
-		// TODO Add GUID to Refresh token hash calculation to ensure is was used by correct one
-		// TODO add saving of Refresh tokens to DB
+		GUID := r.Header.Get("Guid")
+		session := uuid.New().String()
 
 		ip := r.RemoteAddr
 
-		tokenPair, err := generateAccessRefreshPair(ip, "")
+		accessToken, refreshToken, err := generateAccessRefreshTokens(ip, session)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Default().Printf("error when trying to generate Refresh Access token pair: %v\n", err)
+			return
+		}
+
+		hash, err := refreshToken.Hash(GUID)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Default().Printf("error when trying to calculate hash for refresh token: %v\n", err)
+			return
+		}
+
+		tx, err := DB.Begin()
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Default().Printf("error when trying to begin transaction: %v\n", err)
+			return
+		}
+
+		defer func() {
+			if err != nil {
+				tx.Rollback()
+			}
+		}()
+
+		err = AddSession(tx, hash, GUID, session, refreshToken.Header.Expires)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Default().Printf("error when trying to add new session: %v\n", err)
+			return
+		}
+
+		tokenPair, err := makeTokenPair(accessToken, refreshToken)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Default().Printf("error when trying to make token pair: %v\n", err)
 			return
 		}
 
@@ -95,6 +145,12 @@ func newHandleAuth(DB *sql.DB) func(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Default().Println("auth answer json marshalling error error: ", err)
 			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if err = tx.Commit(); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Default().Printf("error when trying to commit new session: %v\n", err)
 			return
 		}
 

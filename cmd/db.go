@@ -2,11 +2,9 @@ package main
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
-	"log"
-	"net/http"
 	"os"
+	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -31,50 +29,42 @@ func ConnectDB() error {
 	return nil
 }
 
-// CheckRefreshTokenHash checks that Refresh token hash is contained in DB
-func CheckRefreshTokenHash(w http.ResponseWriter, r *http.Request, DB *sql.DB, hash string) error {
-	row := DB.QueryRow("SELECT (token_hash) FROM REFRESH_TOKEN WHERE token_hash = $1", hash)
-
-	var resultHash string
-
-	if err := row.Scan(&resultHash); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			msg := "Invalid refresh token"
-			log.Default().Print(msg)
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(msg))
-			return err
-		}
-
-		log.Default().Printf("failed to query row from db: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return err
-	}
-
-	return nil
+type DBProvider interface {
+	QueryRow(query string, args ...any) *sql.Row
+	Exec(query string, args ...any) (sql.Result, error)
 }
 
-// DeleteRefreshTokenHash deletes Refresh token hash from DB
-func DeleteRefreshTokenHash(w http.ResponseWriter, r *http.Request, DB *sql.DB, hash string) error {
-	_, err := DB.Exec("DELETE FROM REFRESH_TOKEN WHERE token_hash = $1", hash)
+// CheckRefreshTokenHash checks that Refresh token hash is contained in DB
+func GetSessionHash(DB DBProvider, session string) (string, error) {
+
+	row := DB.QueryRow("SELECT session_id, token_hash FROM sessions WHERE session_id = $1", session)
+
+	var sessionId, resultHash string
+
+	if err := row.Scan(&sessionId, &resultHash); err != nil {
+		return "", fmt.Errorf("failed to get refresh token hash for session: %v, got error: %v", session, err)
+	}
+
+	return resultHash, nil
+}
+
+// AddRefreshTokenHash stores Refresh token hash to DB
+func AddSession(DB DBProvider, hash string, GUID string, session string, expires time.Time) error {
+	_, err := DB.Exec("INSERT INTO sessions (session_id, GUID, token_hash, expires_at) VALUES ($1, $2, $3, $4)", session, GUID, hash, expires)
 
 	if err != nil {
-		log.Default().Printf("error when deleting token hash from DB: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return err
+		return fmt.Errorf("failed to add session: %v, got error: %v", session, err)
 	}
 
 	return nil
 }
 
 // AddRefreshTokenHash stores Refresh token hash to DB
-func AddRefreshTokenHash(w http.ResponseWriter, r *http.Request, DB *sql.DB, hash string, GUID string) error {
-	_, err := DB.Exec("INSERT INTO REFRESH_TOKEN (token_hash, GUID) VALUES ($1, $2)", hash, GUID)
+func UpdateSession(DB DBProvider, hash string, session string, expires time.Time) error {
+	_, err := DB.Exec("UPDATE sessions SET token_hash = $1, expires_at = $2 WHERE session_id = $3", hash, expires, session)
 
 	if err != nil {
-		log.Printf("error when writing new refresh token hash into DB: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return err
+		return fmt.Errorf("failed to update session: %v, got error: %v", session, err)
 	}
 
 	return nil
